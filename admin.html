@@ -243,6 +243,10 @@
           <label>E-mail do responsável de RH *</label>
           <input type="email" id="new-contact" placeholder="rh@empresa.com.br"/>
         </div>
+        <div class="form-group">
+          <label>Senha inicial do dashboard *</label>
+          <input type="text" id="new-dashboard-pw" placeholder="Ex: DRPS@2026 (empresa vai poder alterar)"/>
+        </div>
         <button class="btn-primary" onclick="saveCompany()">Cadastrar empresa e gerar link →</button>
       </div>
     </div>
@@ -260,12 +264,13 @@
                 <th>RH / Contato</th>
                 <th>Status</th>
                 <th>Respostas</th>
+                <th>Senha Dashboard</th>
                 <th>Cadastro</th>
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody id="companies-tbody">
-              <tr><td colspan="7" style="text-align:center;color:var(--hint);padding:36px;">Carregando...</td></tr>
+              <tr><td colspan="8" style="text-align:center;color:var(--hint);padding:36px;">Carregando...</td></tr>
             </tbody>
           </table>
         </div>
@@ -360,20 +365,25 @@ async function saveCompany() {
   const name    = document.getElementById('new-name').value.trim();
   const cnpj    = document.getElementById('new-cnpj').value.trim();
   const contact = document.getElementById('new-contact').value.trim();
+  const dashPw  = document.getElementById('new-dashboard-pw').value.trim();
   const code    = getCode();
   if (!name)    { toast('Informe o nome da empresa.','error'); return; }
   if (!contact) { toast('Informe o e-mail do responsável.','error'); return; }
+  if (!dashPw)  { toast('Defina a senha inicial do dashboard.','error'); return; }
   showLoad('Cadastrando empresa...');
-  const { error } = await sb.from('companies').insert([{ code, name, cnpj: cnpj||null, contact, active: true }]);
+  const { error } = await sb.from('companies').insert([{
+    code, name, cnpj: cnpj||null, contact, active: true, dashboard_password: dashPw
+  }]);
   hideLoad();
   if (error) {
     toast(error.code === '23505' ? 'Código já existe. Gere um novo.' : 'Erro: ' + error.message, 'error');
     return;
   }
-  toast(`✅ "${name}" cadastrada! Código: ${code}`, 'success');
+  toast(`✅ "${name}" cadastrada! Código: ${code} | Senha: ${dashPw}`, 'success');
   document.getElementById('new-name').value = '';
   document.getElementById('new-cnpj').value = '';
   document.getElementById('new-contact').value = '';
+  document.getElementById('new-dashboard-pw').value = '';
   genCode();
   await Promise.all([loadCompanies(), loadStats()]);
 }
@@ -413,12 +423,16 @@ async function loadCompanies() {
     const badge = c.active
       ? '<span class="badge badge-active">Ativo</span>'
       : '<span class="badge badge-inactive">Inativo</span>';
+    const pwDisplay = c.dashboard_password
+      ? `<span style="font-size:11px;font-family:monospace;background:rgba(255,255,255,.08);padding:2px 7px;border-radius:5px;">${esc(c.dashboard_password)}</span>`
+      : '<span style="color:var(--hint);font-size:11px;">— não definida</span>';
     return `<tr>
       <td>${esc(c.name)}</td>
       <td><span class="badge badge-code">${esc(c.code)}</span></td>
       <td style="font-size:12px;">${esc(c.contact||'—')}</td>
       <td>${badge}</td>
       <td style="font-weight:700;color:var(--yellow);">${cm[c.code]||0}</td>
+      <td>${pwDisplay} <button class="btn-sm" style="margin-left:6px;font-size:10px;" onclick="resetPwModal('${esc(c.code)}','${esc(c.name)}')">🔑</button></td>
       <td style="font-size:12px;">${dt}</td>
       <td>
         <div class="actions">
@@ -581,6 +595,65 @@ function hideLoad() { document.getElementById('loading').classList.remove('show'
 document.getElementById('email-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('email-modal')) closeEmailModal();
 });
+
+// ═══════════════════════════════════════════════════════════
+//  RESET PASSWORD — Admin pode redefinir senha do dashboard
+// ═══════════════════════════════════════════════════════════
+let resetPwCode = '';
+
+function resetPwModal(code, name) {
+  resetPwCode = code;
+  document.getElementById('reset-pw-company').textContent = `${name} (${code})`;
+  document.getElementById('reset-pw-input').value = '';
+  document.getElementById('reset-pw-modal').classList.add('show');
+  setTimeout(() => document.getElementById('reset-pw-input').focus(), 100);
+}
+
+function closeResetPwModal() {
+  document.getElementById('reset-pw-modal').classList.remove('show');
+}
+
+async function doResetPw() {
+  const newPw = document.getElementById('reset-pw-input').value.trim();
+  if (!newPw || newPw.length < 4) { toast('Informe uma senha com no mínimo 4 caracteres.','error'); return; }
+
+  const btn = document.getElementById('btn-reset-pw-confirm');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+
+  const { error } = await sb.from('companies')
+    .update({ dashboard_password: newPw })
+    .eq('code', resetPwCode);
+
+  btn.disabled = false; btn.textContent = 'Redefinir senha';
+
+  if (error) { toast('Erro ao redefinir senha: ' + error.message, 'error'); return; }
+
+  toast(`✅ Senha de ${resetPwCode} redefinida para: ${newPw}`, 'success');
+  closeResetPwModal();
+  await loadCompanies();
+}
+
+document.getElementById('reset-pw-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('reset-pw-modal')) closeResetPwModal();
+});
 </script>
+
+<!-- RESET PW MODAL -->
+<div id="reset-pw-modal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>🔑 Redefinir senha do dashboard</h3>
+      <button class="modal-close" onclick="closeResetPwModal()">×</button>
+    </div>
+    <p id="reset-pw-company" style="font-size:13px;color:var(--sub);margin-bottom:20px;"></p>
+    <div class="form-group">
+      <label>Nova senha</label>
+      <input type="text" id="reset-pw-input" placeholder="Ex: DRPS@2026"/>
+    </div>
+    <button id="btn-reset-pw-confirm" class="btn-primary" style="width:100%" onclick="doResetPw()">Redefinir senha</button>
+    <button class="btn-logout" style="width:100%;margin-top:10px;padding:12px;" onclick="closeResetPwModal()">Cancelar</button>
+  </div>
+</div>
+
 </body>
 </html>
