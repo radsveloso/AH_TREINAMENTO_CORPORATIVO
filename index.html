@@ -6,10 +6,7 @@
   <title>DRPS — Diagnóstico de Riscos Psicossociais | AH Treinamento Corporativo</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <!-- ═══════════════════════════════════════════
-       SUPABASE CONFIG — preencha suas credenciais
-       ─────────────────────────────────────────── -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Sem SDK externo — usa fetch nativo -->
 
   <style>
     /* ═══════════════════════════════════════
@@ -1053,17 +1050,30 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════
-//  CONFIGURAÇÃO — substitua pelos seus dados do Supabase
+//  CONFIGURAÇÃO SUPABASE — fetch nativo (sem SDK)
 // ═══════════════════════════════════════════════════════════
 const SUPABASE_URL  = 'https://whvrzrbnavcqmavluwot.supabase.co';
 const SUPABASE_KEY  = 'sb_publishable_pNKUOlMZe6-x8hVqqx76pA_qyW6Vgnl';
 
-// ── Inicializa Supabase ─────────────────────────────────────
-let supabase = null;
-try {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-} catch(e) {
-  console.warn('Supabase não inicializado. Configure SUPABASE_URL e SUPABASE_KEY.');
+const SB_HEADERS = {
+  'Content-Type':  'application/json',
+  'apikey':        SUPABASE_KEY,
+  'Authorization': 'Bearer ' + SUPABASE_KEY,
+};
+
+async function sbGet(path) {
+  const r = await fetch(SUPABASE_URL + path, { headers: SB_HEADERS });
+  return { status: r.status, data: await r.json() };
+}
+
+async function sbPost(path, body) {
+  const r = await fetch(SUPABASE_URL + path, {
+    method: 'POST',
+    headers: { ...SB_HEADERS, 'Prefer': 'return=minimal' },
+    body: JSON.stringify(body),
+  });
+  const text = await r.text();
+  return { status: r.status, data: text ? JSON.parse(text) : null };
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1365,30 +1375,19 @@ async function validateCode() {
     return;
   }
 
-  // Se Supabase não configurado → aceita qualquer código (modo demo)
-  if (!supabase || SUPABASE_URL.includes('SEU_PROJETO')) {
-    state.companyCode = code;
-    state.companyName = code;
-    goToScreen('screen-welcome');
-    return;
-  }
-
   showLoading('Validando código da empresa...');
   try {
-    const { data, error } = await supabase
-      .from('companies')
-      .select('code, name')
-      .eq('code', code)
-      .single();
-
+    const { status, data } = await sbGet(
+      `/rest/v1/companies?code=eq.${encodeURIComponent(code)}&active=eq.true&select=code,name&limit=1`
+    );
     hideLoading();
-    if (error || !data) {
+    if (status === 200 && Array.isArray(data) && data.length > 0) {
+      state.companyCode = data[0].code;
+      state.companyName = data[0].name;
+      goToScreen('screen-welcome');
+    } else {
       errEl.textContent = 'Código não encontrado. Verifique com o seu RH.';
       errEl.classList.add('visible');
-    } else {
-      state.companyCode = data.code;
-      state.companyName = data.name;
-      goToScreen('screen-welcome');
     }
   } catch(e) {
     hideLoading();
@@ -1407,36 +1406,26 @@ async function submitForm(requiredIds) {
     return;
   }
 
-  // Monta payload
   const payload = {
     company_code: state.companyCode,
     submitted_at: new Date().toISOString(),
-    q1_funcao:  state.answers['q1']  || null,
-    q2_setor:   state.answers['q2']  || null,
+    q1_funcao: state.answers['q1'] || null,
+    q2_setor:  state.answers['q2'] || null,
   };
   for (let i = 3; i <= 52; i++) {
     const k = 'q' + i;
     payload[k] = state.answers[k] !== undefined ? state.answers[k] : null;
   }
 
-  // Se Supabase não configurado → só mostra tela de sucesso
-  if (!supabase || SUPABASE_URL.includes('SEU_PROJETO')) {
-    console.log('Payload (demo mode):', payload);
-    localStorage.removeItem('drps_progress');
-    goToScreen('screen-thanks');
-    return;
-  }
-
   showLoading('Enviando suas respostas com segurança...');
   try {
-    const { error } = await supabase.from('responses').insert([payload]);
+    const { status } = await sbPost('/rest/v1/responses', payload);
     hideLoading();
-    if (error) {
-      showToast('Erro ao enviar. Tente novamente em instantes.', 'error');
-      console.error(error);
-    } else {
+    if (status === 201 || status === 200) {
       localStorage.removeItem('drps_progress');
       goToScreen('screen-thanks');
+    } else {
+      showToast('Erro ao enviar. Tente novamente em instantes.', 'error');
     }
   } catch(e) {
     hideLoading();
