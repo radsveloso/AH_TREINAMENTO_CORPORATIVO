@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DRPS — Diagnóstico de Riscos Psicossociais | AH Treinamento Corporativo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- ═══════════════════════════════════════════
+       SUPABASE CONFIG — preencha suas credenciais
+       ─────────────────────────────────────────── -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* ═══════════════════════════════════════
+       DESIGN SYSTEM — Sofia + Dra. Helena
+       ─────────────────────────────────────── */
+    :root {
+      --brand-yellow:   #FFD60A;
+      --brand-dark:     #1A1A2E;
+      --brand-mid:      #16213E;
+      --brand-surface:  #0F3460;
+      --brand-card:     #1e2a45;
+      --text-primary:   #F0F4FF;
+      --text-secondary: #A8B4CC;
+      --text-hint:      #6B7A99;
+      --scale-0:        #4a5568;
+      --scale-1:        #744210;
+      --scale-2:        #744210;
+      --scale-3:        #276749;
+      --scale-4:        #155724;
+      --accent-red:     #e74c3c;
+      --accent-green:   #2ecc71;
+      --radius-sm:      8px;
+      --radius-md:      14px;
+      --radius-lg:      22px;
+      --shadow-card:    0 4px 32px rgba(0,0,0,0.35);
+      --transition:     all 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--brand-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Background particle effect ─────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 40%, rgba(255,214,10,.04) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 70%, rgba(15,52,96,.5) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Progress Bar ───────────────────────── */
+    #progress-bar-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      z-index: 1000;
+    }
+    #progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--brand-yellow), #FFA500);
+      transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+      width: 0%;
+    }
+
+    /* ── Header ─────────────────────────────── */
+    #app-header {
+      position: fixed;
+      top: 4px;
+      left: 0;
+      right: 0;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(26,26,46,0.85);
+      backdrop-filter: blur(12px);
+      z-index: 999;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      transition: var(--transition);
+    }
+    .header-logo {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--brand-yellow);
+      text-transform: uppercase;
+    }
+    #step-indicator {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-hint);
+      background: rgba(255,255,255,0.06);
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    #progress-pct {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--brand-yellow);
+    }
+
+    /* ── Screens / Wrapper ──────────────────── */
+    #app {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 100px 20px 60px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      animation: fadeSlideIn 0.4s cubic-bezier(0.4,0,0.2,1) both;
+    }
+    .screen.active { display: block; }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeSlideOut {
+      from { opacity: 1; transform: translateY(0); }
+      to   { opacity: 0; transform: translateY(-24px); }
+    }
+
+    /* ── Card ───────────────────────────────── */
+    .card {
+      background: var(--brand-card);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      box-shadow: var(--shadow-card);
+    }
+
+    /* ── Welcome Screen ─────────────────────── */
+    .welcome-logo {
+      width: 72px;
+      height: 72px;
+      background: var(--brand-yellow);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin: 0 auto 24px;
+      box-shadow: 0 0 40px rgba(255,214,10,0.3);
+    }
+    .welcome-title {
+      text-align: center;
+      font-size: clamp(22px, 4vw, 28px);
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1.3;
+      margin-bottom: 8px;
+    }
+    .welcome-subtitle {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: var(--brand-yellow);
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+    .welcome-text {
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    .info-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin: 28px 0;
+    }
+    .pill {
+      background: rgba(255,214,10,0.10);
+      border: 1px solid rgba(255,214,10,0.25);
+      color: var(--brand-yellow);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .commitment-box {
+      background: rgba(255,255,255,0.04);
+      border-left: 3px solid var(--brand-yellow);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 16px 20px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      margin-bottom: 32px;
+    }
+    .commitment-box strong { color: var(--text-primary); }
+
+    /* ── Company Code Screen ────────────────── */
+    .code-icon {
+      font-size: 48px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .code-title {
+      text-align: center;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .code-sub {
+      text-align: center;
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+    .input-group {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--text-hint);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .input-group input, .input-group select {
+      width: 100%;
+      padding: 16px 20px;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-size: 16px;
+      font-family: inherit;
+      font-weight: 500;
+      transition: var(--transition);
+      outline: none;
+    }
+    .input-group input:focus, .input-group select:focus {
+      border-color: var(--brand-yellow);
+      background: rgba(255,214,10,0.06);
+      box-shadow: 0 0 0 3px rgba(255,214,10,0.12);
+    }
+    .input-group input::placeholder { color: var(--text-hint); }
+    .input-group select option { background: var(--brand-mid); color: var(--text-primary); }
+    .input-error {
+      font-size: 12px;
+      color: #e74c3c;
+      margin-top: 6px;
+      display: none;
+    }
+    .input-error.visible { display: block; }
+
+    /* ── Buttons ────────────────────────────── */
+    .btn-primary {
+      width: 100%;
+      padding: 16px 24px;
+      background: var(--brand-yellow);
+      color: var(--brand-dark);
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: var(--transition);
+      letter-spacing: 0.03em;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary:hover {
+      background: #ffe34d;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(255,214,10,0.3);
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .btn-secondary {
+      width: 100%;
+      padding: 14px 24px;
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1.5px solid rgba(255,255,255,0.14);
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 10px;
+    }
+    .btn-secondary:hover {
+      border-color: rgba(255,255,255,0.3);
+      color: var(--text-primary);
+    }
+
+    /* ── Topic Header ───────────────────────── */
+    .topic-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,214,10,0.12);
+      border: 1px solid rgba(255,214,10,0.25);
+      color: var(--brand-yellow);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .topic-title {
+      font-size: clamp(18px, 3.5vw, 24px);
+      font-weight: 800;
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+    .topic-description {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+
+    /* ── Question Block ─────────────────────── */
+    .question-block {
+      margin-bottom: 32px;
+      padding: 24px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--radius-md);
+      transition: var(--transition);
+    }
+    .question-block:hover {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.12);
+    }
+    .question-block.answered {
+      border-color: rgba(255,214,10,0.2);
+      background: rgba(255,214,10,0.04);
+    }
+    .question-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--brand-yellow);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .question-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.55;
+      margin-bottom: 8px;
+    }
+    .question-hint {
+      font-size: 12px;
+      color: var(--text-hint);
+      font-style: italic;
+      margin-bottom: 18px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.03);
+      border-radius: var(--radius-sm);
+      border-left: 2px solid rgba(255,255,255,0.12);
+    }
+    .question-required {
+      color: #e74c3c;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 4px;
+    }
+
+    /* ── Scale Selector (0–4) ───────────────── */
+    .scale-wrapper {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .scale-option {
+      flex: 1;
+      min-width: 54px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .scale-option input[type="radio"] { display: none; }
+    .scale-btn {
+      width: 100%;
+      min-width: 44px;
+      aspect-ratio: 1;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.06);
+      border: 2px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      transition: var(--transition);
+      cursor: pointer;
+      user-select: none;
+    }
+    .scale-option:hover .scale-btn {
+      border-color: var(--brand-yellow);
+      background: rgba(255,214,10,0.1);
+      color: var(--brand-yellow);
+      transform: translateY(-2px);
+    }
+    .scale-option input[type="radio"]:checked + .scale-btn {
+      background: var(--brand-yellow);
+      border-color: var(--brand-yellow);
+      color: var(--brand-dark);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(255,214,10,0.35);
+    }
+    .scale-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-hint);
+      text-align: center;
+      transition: var(--transition);
+    }
+    .scale-option:hover .scale-label,
+    .scale-option input[type="radio"]:checked ~ .scale-label {
+      color: var(--brand-yellow);
+    }
+    .scale-legend {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-hint);
+      margin-top: 8px;
+      padding: 0 2px;
+    }
+
+    /* ── Navigation ─────────────────────────── */
+    .nav-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+      align-items: center;
+    }
+    .btn-back {
+      padding: 14px 20px;
+      background: transparent;
+      color: var(--text-hint);
+      border: 1.5px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+    .btn-back:hover {
+      color: var(--text-primary);
+      border-color: rgba(255,255,255,0.25);
+    }
+    .btn-next {
+      flex: 1;
+      padding: 16px 24px;
+      background: var(--brand-yellow);
+      color: var(--brand-dark);
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .btn-next:hover {
+      background: #ffe34d;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(255,214,10,0.3);
+    }
+    .btn-next:disabled {
+      background: rgba(255,255,255,0.12);
+      color: var(--text-hint);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ── Topic Progress Dots ────────────────── */
+    .topic-dots {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 28px;
+      flex-wrap: wrap;
+    }
+    .topic-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      transition: var(--transition);
+    }
+    .topic-dot.done   { background: var(--brand-yellow); }
+    .topic-dot.active { background: var(--brand-yellow); width: 24px; border-radius: 4px; }
+
+    /* ── Questions counter ──────────────────── */
+    .questions-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: var(--text-hint);
+    }
+    .answered-count {
+      font-weight: 600;
+      color: var(--brand-yellow);
+    }
+
+    /* ── Thank You Screen ───────────────────── */
+    .thanks-icon {
+      font-size: 64px;
+      text-align: center;
+      margin-bottom: 24px;
+      animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    }
+    @keyframes bounceIn {
+      from { transform: scale(0); opacity: 0; }
+      60%  { transform: scale(1.1); }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .thanks-title {
+      text-align: center;
+      font-size: clamp(24px, 4vw, 30px);
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+    .thanks-sub {
+      text-align: center;
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 480px;
+      margin: 0 auto 32px;
+    }
+    .thanks-stats {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: rgba(255,214,10,0.08);
+      border: 1px solid rgba(255,214,10,0.2);
+      border-radius: var(--radius-md);
+      padding: 16px 24px;
+      text-align: center;
+    }
+    .stat-num {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--brand-yellow);
+      line-height: 1;
+    }
+    .stat-lbl { font-size: 11px; color: var(--text-hint); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* ── Loading overlay ────────────────────── */
+    #loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26,26,46,0.9);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      flex-direction: column;
+      gap: 20px;
+    }
+    #loading-overlay.show { display: flex; }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(255,214,10,0.2);
+      border-top-color: var(--brand-yellow);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 14px; color: var(--text-secondary); }
+
+    /* ── Toast ──────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1e3a5f;
+      color: #fff;
+      padding: 14px 24px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 3000;
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      max-width: 380px;
+      text-align: center;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.error { background: #5a1a1a; border-left: 3px solid #e74c3c; }
+    #toast.success { background: #1a3a2a; border-left: 3px solid #2ecc71; }
+
+    /* ── Responsivo ─────────────────────────── */
+    @media (max-width: 600px) {
+      .card { padding: 24px 18px; }
+      .scale-btn { font-size: 15px; }
+      .scale-label { font-size: 8px; }
+      #app-header { padding: 10px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div id="progress-bar-container"><div id="progress-bar"></div></div>
+
+<!-- Header -->
+<div id="app-header">
+  <span class="header-logo">AH Treinamento · DRPS</span>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span id="step-indicator">Bem-vindo</span>
+    <span id="progress-pct">0%</span>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <p class="loading-text" id="loading-text">Validando código da empresa...</p>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════
+     APP — Todas as screens
+     ─────────────────────────────────────────── -->
+<div id="app">
+
+  <!-- ── Screen 0: Código da Empresa ────────── -->
+  <div class="screen active" id="screen-code">
+    <div class="card">
+      <div class="code-icon">🏢</div>
+      <h1 class="code-title">Bem-vindo(a) ao DRPS</h1>
+      <p class="code-sub">Para iniciar, insira o código da sua empresa fornecido pelo RH.</p>
+      <div class="input-group">
+        <label>Código da empresa</label>
+        <input type="text" id="company-code-input" placeholder="Ex: EMPRESA001" autocomplete="off" autocapitalize="characters" />
+        <p class="input-error" id="code-error">Código não encontrado. Verifique com o seu RH.</p>
+      </div>
+      <button class="btn-primary" onclick="validateCode()">Continuar →</button>
+    </div>
+  </div>
+
+  <!-- ── Screen 1: Boas-vindas ───────────────── -->
+  <div class="screen" id="screen-welcome">
+    <div class="card">
+      <div class="welcome-logo">📋</div>
+      <p class="welcome-subtitle">DRPS — Diagnóstico de Riscos Psicossociais</p>
+      <h1 class="welcome-title">AH Treinamento Corporativo</h1>
+      <p class="welcome-text">
+        Este formulário identifica fatores de risco psicossocial no ambiente de trabalho,
+        conforme as diretrizes da <strong>NR-01</strong> e do Guia de Avaliação de Riscos
+        Psicossociais do <strong>Ministério do Trabalho e Emprego (MTE)</strong>.
+      </p>
+      <div class="info-pills">
+        <span class="pill">🔒 Respostas 100% confidenciais</span>
+        <span class="pill">⏱ ~10 minutos</span>
+        <span class="pill">📊 52 questões</span>
+        <span class="pill">🛡 LGPD</span>
+      </div>
+      <div class="commitment-box">
+        <strong>Sua participação faz a diferença.</strong><br/>
+        Ao responder, você declara que fornecerá informações verdadeiras e baseadas na sua
+        experiência real. As respostas são analisadas de forma <strong>coletiva e anônima</strong>,
+        sem identificar ninguém individualmente. Sua opinião ajuda a construir um ambiente
+        de trabalho mais <strong>saudável, respeitoso e seguro para todos</strong>.
+      </div>
+      <button class="btn-primary" onclick="goToScreen('screen-identification')">Começar agora →</button>
+    </div>
+  </div>
+
+  <!-- ── Screen 2: Identificação ─────────────── -->
+  <div class="screen" id="screen-identification">
+    <div class="card">
+      <div class="topic-badge">🔷 Identificação</div>
+      <h2 class="topic-title">Sobre você</h2>
+      <p class="topic-description">Estas informações ajudam a analisar os resultados por área e função, sempre de forma anônima e agregada.</p>
+
+      <div class="question-block" id="qb-q1">
+        <p class="question-num">Questão 01</p>
+        <p class="question-text">Qual a sua função? <span class="question-required">*</span></p>
+        <div class="input-group" style="margin-bottom:0;">
+          <input type="text" id="q1" placeholder="Ex: Analista de TI, Coordenador de Vendas..." oninput="markAnswered('q1','qb-q1')" />
+        </div>
+      </div>
+
+      <div class="question-block" id="qb-q2">
+        <p class="question-num">Questão 02</p>
+        <p class="question-text">Qual o seu setor? <span class="question-required">*</span></p>
+        <div class="input-group" style="margin-bottom:0;">
+          <select id="q2" onchange="markAnswered('q2','qb-q2')">
+            <option value="">Selecione seu setor...</option>
+            <option value="Administrativo">Administrativo</option>
+            <option value="Financeiro">Financeiro</option>
+            <option value="RH">RH</option>
+            <option value="Comercial">Comercial</option>
+            <option value="Vendas">Vendas</option>
+            <option value="Operacional">Operacional</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn-back" onclick="goToScreen('screen-welcome')">← Voltar</button>
+        <button class="btn-next" onclick="nextSection('screen-identification', 'screen-topic-1', ['q1','q2'])">Próximo →</button>
+      </div>
+      <div class="topic-dots" id="dots-ident"></div>
+    </div>
+  </div>
+
+  <!-- ── Tópico 01 — Assédio ──────────────────── -->
+  <div class="screen" id="screen-topic-1">
+    <div class="card">
+      <div class="topic-badge">🔷 Tópico 01 de 13</div>
+      <h2 class="topic-title">Assédio de Qualquer Natureza</h2>
+      <p class="topic-description">Avalia a percepção sobre situações de assédio moral, sexual ou de qualquer natureza no ambiente de trabalho.</p>
+      <div class="questions-meta">
+        <span>Questões 03 – 07</span>
+        <span class="answered-count" id="count-t1">0 de 5 respondidas</span>
+      </div>
+      <div id="questions-t1"></div>
+      <div class="nav-row">
+        <button class="btn-back" onclick="goToScreen('screen-identification')">← Voltar</button>
+        <button class="btn-next" onclick="nextSection('screen-topic-1','screen-topic-2',topicQIds[0])">Próximo →</button>
+      </div>
+      <div class="topic-dots" id="dots-t1"></div>
+    </div>
+  </div>
+
+  <!-- ── Tópico 02 ─────────────────────────────── -->
+  <div class="screen" id="screen-topic-2">
+    <div class="card">
+      <div class="topic-badge">🔷 Tópico 02 de 13</div>
+      <h2 class="topic-title">Suporte e Apoio no Ambiente de Trabalho</h2>
+      <p class="topic-description">Avalia a percepção de suporte de colegas, lideranças e RH diante de dificuldades e conflitos.</p>
+      <div class="questions-meta">
+        <span>Questões 08 – 12</span>
+        <span class="answered-count" id="count-t2">0 de 5 respondidas</span>
+      </div>
+      <div id="questions-t2"></div>
+      <div class="nav-row">
+        <button class="btn-back" onclick="goToScreen('screen-topic-1')">← Voltar</button>
+        <button class="btn-next" onclick="nextSection('screen-topic-2','screen-topic-3',topicQIds[1])">Próximo →</button>
+      </div>
+      <div class="topic-dots" id="dots-t2"></div>
+    </div>
+  </div>
+
+  <!-- ── Tópico 03 ─────────────────────────────── -->
+  <div class="screen" id="screen-topic-3">
+    <div class="card">
+      <div class="topic-badge">🔷 Tópico 03 de 13</div>
+      <h2 class="topic-title">Má Gestão de Mudanças Organizacionais</h2>
+      <p class="topic-description">Avalia como mudanças na empresa são comunicadas e seu impacto no senso de segurança dos colaboradores.</p>
+      <div class="questions-meta">
+        <span>Questões 13 – 16</span>
+        <span class="answered-count" id="count-t3">0 de 4 respondidas</span>
+      </div>
+      <div id="questions-t3"></div>
+      <div class="nav-row">
+        <button class="btn-back" onclick="goToScreen('screen-topic-2')">← Voltar</button>
+        <button class="btn-next" onclick="nextSection('screen-topic-3','screen-topic-4',topicQIds[2])">Próximo →</button>
+      </div>
+      <div class="topic-dots" id="dots-t3"></div>
+    </div>
+  </div>
+
+  <!-- ── Tópico 04 ─────────────────────────────── -->
+  <div class="screen" id="screen-topic-4">
+    <div class="card">
+      <div class="topic-badge">🔷 Tópico 04 de 13</div>
+      <h2 class="topic-title">Baixa Clareza de Papel ou Função</h2>
+      <p class="topic-description">Avalia se os colaboradores compreendem claramente suas responsabilidades e expectativas no trabalho.</p>
+      <div class="questions-meta">
+        <span>Questões 17 – 20</span>
+        <span class="answered-count" id="count-t4">0 de 4 respondidas</span>
+      </div>
+      <div id="questions-t4"></div>
+      <div class="nav-row">
+        <button class="btn-back" onclick="goToScreen('screen-topic-3')">← Voltar</button>
+        <button class="btn-next" onclick="nextSection('screen-topic-4','screen-topic-5',topicQIds[3])">Próximo →</button>
+      </div>
+      <div class="topic-dots" id="dots-t4"></div>
+    </div>
+  </div>
+
+  <!-- ── Tópico 05 ─────────────────────────────── -->
+  <div class="screen" id="screen-topic-5">
+    <div class="card">
+      <div class="topic-badge">🔷 Tópico 05 de 13</div>
+      <h2 class="topic-title">Baixas Recompensas e Reconhecimento</h2>
+      <p class="topic-description">Avalia a percepção de valorização, feedback e reconhecimento pelo trabalho realizado.</p>
+      <div class="questions-meta">
+        <span>Questões 21 – 23</span>
+        <span class="answered-count" id="count-t5">0 de 3 respondidas</span>
+      </div>
+      <div id="questions-t5"></div>
+      <div class="nav-row">
+        <button class="btn-back" onclick="goToScreen('screen-topic-4')">← Voltar</button>
+        <button class="btn-next" onclick="nextSection('screen-topic-5','screen-topic-6',topicQIds[4])">Próximo →</button>
+      </div>
+      <div class="topic-dots" id="dots-t5"></div>
+    </div>
+  </div>
+
+  <!-- ── Tópico 06 ─────────────────────────────── -->
+  <div class="screen" id="screen-topic-6">
+    <div class="card">
+      <div class="topic-badge">🔷 Tópico 06 de 13</div>
+      <h2 class="topic-title">Baixo Controle no Trabalho / Falta de Autonomia</h2>
+      <p class="topic-description">Avalia o grau de autonomia e liberdade do colaborador para organizar e executar suas tarefas.</p>
+      <div class="questions-meta">
+        <span>Questões 24 – 27</span>
+        <span class="answered-count" id="count-t6">0 de 4 respondidas</span>
+      </div>
+      <div id="questions-t6"></div>
+      <div class="nav-row">
+        <button class="btn-back" onclick="goToScreen('screen-topic-5')">← Voltar</button>
+        <button class="btn-next" onclick="nextSection('screen-topic-6','screen-topic-7',topicQIds[5])">Próximo →</button>
+      </div>
+      <div class="topic-dots" id="dots-t6"></div>
+    </div>
+  </div>
+
+  <!-- ── Tópico 07 ─────────────────────────────── -->
+  <div class="screen" id="screen-topic-7">
+    <div class="card">
+      <div class="topic-badge">🔷 Tópico 07 de 13</div>
+      <h2 class="topic-title">Baixa Justiça Organizacional</h2>
+      <p class="topic-description">Avalia a percepção de equidade, transparência e justiça nas decisões e avaliações da empresa.</p>
+      <div class="questions-meta">
+        <span>Questões 28 – 31</span>
+        <span class="answered-count" id="count-t7">0 de 4 respondidas</span>
+      </div>
+      <div id="questions-t7"></div>
+      <div class="nav-row">
+        <button class="btn-back" onclick="goToScreen('screen-topic-6')">← Voltar</button>
+        <button class="btn-next" onclick="nextSection('screen-topic-7','screen-topic-8',topicQIds[6])">Próximo →</button>
+      </div>
+      <div class="topic-dots" id="dots-t7"></div>
+    </div>
+  </div>
+
+  <!-- ── Tópico 08 ─────────────────────────────── -->
+  <div class="screen" id="screen-topic-8">
+    <div class="card">
+      <div class="topic-badge">🔷 Tópico 08 de 13</div>
+      <h2 class="topic-title">Eventos Violentos ou Traumáticos</h2>
+      <p class="topic-description">Avalia a exposição a situações de violência, ameaças ou eventos gravemente impactantes no trabalho.</p>
+      <div class="questions-meta">
+        <span>Questões 32 – 34</span>
+        <span class="answered-count" id="count-t8">0 de 3 respondidas</span>
+      </div>
+      <div id="questions-t8"></div>
+      <div class="nav-row">
+        <button class="btn-back" onclick="goToScreen('screen-topic-7')">← Voltar</button>
+        <button class="btn-next" onclick="nextSection('screen-topic-8','screen-topic-9',topicQIds[7])">Próximo →</button>
+      </div>
+      <div class="topic-dots" id="dots-t8"></div>
+    </div>
+  </div>
+
+  <!-- ── Tópico 09 ─────────────────────────────── -->
+  <div class="screen" id="screen-topic-9">
+    <div class="card">
+      <div class="topic-badge">🔷 Tópico 09 de 13</div>
+      <h2 class="topic-title">Baixa Demanda no Trabalho (Subcarga)</h2>
+      <p class="topic-description">Avalia situações de ociosidade, subutilização de capacidades e falta de desafio na rotina de trabalho.</p>
+      <div class="questions-meta">
+        <span>Questões 35 – 38</span>
+        <span class="answered-count" id="count-t9">0 de 4 respondidas</span>
+      </div>
+      <div id="questions-t9"></div>
+      <div class="nav-row">
+        <button class="btn-back" onclick="goToScreen('screen-topic-8')">← Voltar</button>
+        <button class="btn-next" onclick="nextSection('screen-topic-9','screen-topic-10',topicQIds[8])">Próximo →</button>
+      </div>
+      <div class="topic-dots" id="dots-t9"></div>
+    </div>
+  </div>
+
+  <!-- ── Tópico 10 ─────────────────────────────── -->
+  <div class="screen" id="screen-topic-10">
+    <div class="card">
+      <div class="topic-badge">🔷 Tópico 10 de 13</div>
+      <h2 class="topic-title">Excesso de Demandas no Trabalho (Sobrecarga)</h2>
+      <p class="topic-description">Avalia situações de excesso de trabalho, horas extras e impactos na saúde por sobrecarga laboral.</p>
+      <div class="questions-meta">
+        <span>Questões 39 – 42</span>
+        <span class="answered-count" id="count-t10">0 de 4 respondidas</span>
+      </div>
+      <div id="questions-t10"></div>
+      <div class="nav-row">
+        <button class="btn-back" onclick="goToScreen('screen-topic-9')">← Voltar</button>
+        <button class="btn-next" onclick="nextSection('screen-topic-10','screen-topic-11',topicQIds[9])">Próximo →</button>
+      </div>
+      <div class="topic-dots" id="dots-t10"></div>
+    </div>
+  </div>
+
+  <!-- ── Tópico 11 ─────────────────────────────── -->
+  <div class="screen" id="screen-topic-11">
+    <div class="card">
+      <div class="topic-badge">🔷 Tópico 11 de 13</div>
+      <h2 class="topic-title">Maus Relacionamentos no Local de Trabalho</h2>
+      <p class="topic-description">Avalia a qualidade dos relacionamentos interpessoais, conflitos e como eles são resolvidos na empresa.</p>
+      <div class="questions-meta">
+        <span>Questões 43 – 45</span>
+        <span class="answered-count" id="count-t11">0 de 3 respondidas</span>
+      </div>
+      <div id="questions-t11"></div>
+      <div class="nav-row">
+        <button class="btn-back" onclick="goToScreen('screen-topic-10')">← Voltar</button>
+        <button class="btn-next" onclick="nextSection('screen-topic-11','screen-topic-12',topicQIds[10])">Próximo →</button>
+      </div>
+      <div class="topic-dots" id="dots-t11"></div>
+    </div>
+  </div>
+
+  <!-- ── Tópico 12 ─────────────────────────────── -->
+  <div class="screen" id="screen-topic-12">
+    <div class="card">
+      <div class="topic-badge">🔷 Tópico 12 de 13</div>
+      <h2 class="topic-title">Trabalho em Condições de Difícil Comunicação</h2>
+      <p class="topic-description">Avalia barreiras de comunicação relacionadas à estrutura, localização ou organização do trabalho.</p>
+      <div class="questions-meta">
+        <span>Questões 46 – 49</span>
+        <span class="answered-count" id="count-t12">0 de 4 respondidas</span>
+      </div>
+      <div id="questions-t12"></div>
+      <div class="nav-row">
+        <button class="btn-back" onclick="goToScreen('screen-topic-11')">← Voltar</button>
+        <button class="btn-next" onclick="nextSection('screen-topic-12','screen-topic-13',topicQIds[11])">Próximo →</button>
+      </div>
+      <div class="topic-dots" id="dots-t12"></div>
+    </div>
+  </div>
+
+  <!-- ── Tópico 13 ─────────────────────────────── -->
+  <div class="screen" id="screen-topic-13">
+    <div class="card">
+      <div class="topic-badge">🔷 Tópico 13 de 13 · Último</div>
+      <h2 class="topic-title">Trabalho Remoto e Isolado</h2>
+      <p class="topic-description">Avalia o impacto do trabalho remoto ou isolado no senso de pertencimento e suporte recebido pelo colaborador.</p>
+      <div class="questions-meta">
+        <span>Questões 50 – 52</span>
+        <span class="answered-count" id="count-t13">0 de 3 respondidas</span>
+      </div>
+      <div id="questions-t13"></div>
+      <div class="nav-row">
+        <button class="btn-back" onclick="goToScreen('screen-topic-12')">← Voltar</button>
+        <button class="btn-next" id="btn-submit" onclick="submitForm(topicQIds[12])">Enviar diagnóstico ✓</button>
+      </div>
+      <div class="topic-dots" id="dots-t13"></div>
+    </div>
+  </div>
+
+  <!-- ── Screen: Obrigado ──────────────────────── -->
+  <div class="screen" id="screen-thanks">
+    <div class="card" style="text-align:center;">
+      <div class="thanks-icon">🎉</div>
+      <h1 class="thanks-title">Respostas enviadas!</h1>
+      <p class="thanks-sub">
+        Obrigado(a) por dedicar seu tempo a este diagnóstico. Sua contribuição é fundamental
+        para construirmos um ambiente de trabalho mais saudável e seguro para todos.
+      </p>
+      <div class="thanks-stats">
+        <div class="stat-card">
+          <div class="stat-num">52</div>
+          <div class="stat-lbl">Questões respondidas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">13</div>
+          <div class="stat-lbl">Tópicos avaliados</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">100%</div>
+          <div class="stat-lbl">Confidencial · LGPD</div>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--text-hint);line-height:1.7;">
+        Os resultados serão analisados de forma coletiva pelo RH e pela equipe de liderança,
+        sem identificação individual. Em breve a empresa terá acesso ao painel completo de diagnóstico.
+      </p>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIGURAÇÃO — substitua pelos seus dados do Supabase
+// ═══════════════════════════════════════════════════════════
+const SUPABASE_URL  = 'https://whvrzrbnavcqmavluwot.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_pNKUOlMZe6-x8hVqqx76pA_qyW6Vgnl';
+
+// ── Inicializa Supabase ─────────────────────────────────────
+let supabase = null;
+try {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch(e) {
+  console.warn('Supabase não inicializado. Configure SUPABASE_URL e SUPABASE_KEY.');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DADOS DAS QUESTÕES
+// ═══════════════════════════════════════════════════════════
+const scaleLabels = ['Nunca','Raramente','Às vezes','Frequentemente','Sempre'];
+
+const topics = [
+  { id: 1, containerId: 'questions-t1', countId: 'count-t1',
+    questions: [
+      { id:'q3',  num:'03', text:'Você já presenciou ou sofreu comentários ofensivos, piadas ou insinuações inadequadas no ambiente de trabalho?', hint:'Responda pensando se já presenciou ou sofreu esse tipo de situação no trabalho.' },
+      { id:'q4',  num:'04', text:'Você se sente à vontade para relatar situações de assédio moral ou sexual na empresa sem medo de represálias?', hint:'Responda se você se sente seguro(a) para relatar situações de assédio na empresa.' },
+      { id:'q5',  num:'05', text:'Existe um canal seguro e sigiloso para denunciar assédio na empresa?', hint:'Responda se a empresa oferece um meio seguro para denunciar assédio e outras situações.' },
+      { id:'q6',  num:'06', text:'Há casos conhecidos de assédio moral ou sexual que não foram devidamente investigados ou punidos?', hint:'Responda se você percebe que situações de assédio não são tratadas corretamente.' },
+      { id:'q7',  num:'07', text:'O RH e os gestores demonstram comprometimento real com a prevenção do assédio?', hint:'Responda se você percebe ações concretas de prevenção ao assédio na empresa.' },
+    ]
+  },
+  { id: 2, containerId: 'questions-t2', countId: 'count-t2',
+    questions: [
+      { id:'q8',  num:'08', text:'Você sente que pode contar com seus colegas em momentos de dificuldade?', hint:'Responda se você sente que pode contar com seus colegas quando precisa.' },
+      { id:'q9',  num:'09', text:'Existe apoio da liderança para lidar com desafios relacionados ao trabalho?', hint:'Responda se seus gestores ajudam quando surgem dificuldades no trabalho.' },
+      { id:'q10', num:'10', text:'O RH está presente e atuante quando surgem conflitos ou dificuldades no trabalho?', hint:'Responda se o RH costuma apoiar quando há conflitos ou problemas.' },
+      { id:'q11', num:'11', text:'Os gestores promovem um ambiente saudável e respeitoso?', hint:'Responda como você avalia o comportamento dos gestores no dia a dia.' },
+      { id:'q12', num:'12', text:'Você sente que pode expressar suas dificuldades no trabalho sem ser julgado(a)?', hint:'Responda se você se sente à vontade para falar sobre dificuldades no trabalho.' },
+    ]
+  },
+  { id: 3, containerId: 'questions-t3', countId: 'count-t3',
+    questions: [
+      { id:'q13', num:'13', text:'Mudanças organizacionais impactaram negativamente seu sentimento de segurança no trabalho?', hint:'Responda se mudanças na empresa afetaram sua sensação de segurança.' },
+      { id:'q14', num:'14', text:'Há comunicação clara sobre mudanças que afetam a empresa ou os trabalhadores?', hint:'Responda se a empresa costuma explicar bem as mudanças que acontecem.' },
+      { id:'q15', num:'15', text:'Você já sentiu que seu emprego estava ameaçado sem explicações claras durante períodos de mudança?', hint:'Responda se já sentiu insegurança sobre seu emprego durante mudanças.' },
+      { id:'q16', num:'16', text:'Existe transparência na comunicação da empresa durante processos de mudança?', hint:'Responda se as mudanças são comunicadas de forma clara e aberta.' },
+    ]
+  },
+  { id: 4, containerId: 'questions-t4', countId: 'count-t4',
+    questions: [
+      { id:'q17', num:'17', text:'Você recebe instruções claras sobre suas responsabilidades no trabalho?', hint:'Responda se você entende bem quais são suas responsabilidades.' },
+      { id:'q18', num:'18', text:'A comunicação da empresa ajuda você a entender o que é esperado do seu trabalho?', hint:'Responda se a empresa deixa claro o que espera do seu trabalho.' },
+      { id:'q19', num:'19', text:'A comunicação entre equipes e setores contribui para a clareza das suas tarefas?', hint:'Responda se a comunicação entre áreas ajuda no seu trabalho.' },
+      { id:'q20', num:'20', text:'Você se sente confortável para pedir esclarecimentos quando não entende suas funções ou prioridades?', hint:'Responda se você se sente à vontade para perguntar quando não entende algo.' },
+    ]
+  },
+  { id: 5, containerId: 'questions-t5', countId: 'count-t5',
+    questions: [
+      { id:'q21', num:'21', text:'Você sente que seu esforço e desempenho são reconhecidos pela liderança?', hint:'Responda se você se sente valorizado(a) pelo trabalho que realiza.' },
+      { id:'q22', num:'22', text:'Você recebe feedback construtivo sobre o seu trabalho com regularidade?', hint:'Responda se você recebe orientações ou retornos sobre seu trabalho.' },
+      { id:'q23', num:'23', text:'Com que frequência você já se sentiu desmotivado(a) por falta de reconhecimento no trabalho?', hint:'Responda se a falta de reconhecimento já te deixou desmotivado(a).' },
+    ]
+  },
+  { id: 6, containerId: 'questions-t6', countId: 'count-t6',
+    questions: [
+      { id:'q24', num:'24', text:'Você tem liberdade para tomar decisões sobre como executar suas tarefas diárias?', hint:'Responda se você pode sugerir melhorias ou decidir como fazer suas tarefas.' },
+      { id:'q25', num:'25', text:'A empresa confia na sua capacidade de organizar e gerenciar o próprio trabalho?', hint:'Responda se sente que a empresa confia na forma como você organiza seu trabalho.' },
+      { id:'q26', num:'26', text:'Existe excesso de controle ou burocracia que interfere no seu desempenho?', hint:'Responda se regras ou controles atrapalham seu desempenho.' },
+      { id:'q27', num:'27', text:'Existe excesso de supervisão que impacta negativamente na sua produtividade ou bem-estar?', hint:'Responda se o nível de supervisão afeta negativamente seu trabalho.' },
+    ]
+  },
+  { id: 7, containerId: 'questions-t7', countId: 'count-t7',
+    questions: [
+      { id:'q28', num:'28', text:'Você acha justas e claras as formas que a empresa usa para avaliar o seu trabalho?', hint:'Responda se as formas de avaliar seu trabalho são claras e justas.' },
+      { id:'q29', num:'29', text:'Você sente que há igualdade no reconhecimento entre diferentes áreas ou equipes?', hint:'Responda se você percebe tratamento justo entre equipes ou setores.' },
+      { id:'q30', num:'30', text:'Você sente que há transparência nas decisões de desligamento na empresa?', hint:'Responda se a empresa é clara quando ocorrem desligamentos.' },
+      { id:'q31', num:'31', text:'Você já presenciou casos de demissões que considerasse injustas?', hint:'Responda se já presenciou demissões que considerou injustas.' },
+    ]
+  },
+  { id: 8, containerId: 'questions-t8', countId: 'count-t8',
+    questions: [
+      { id:'q32', num:'32', text:'Você já vivenciou ou presenciou alguma situação de violência grave no trabalho (agressão física, ameaça séria ou ataque verbal intenso)?', hint:'Responda se já foi exposto(a) a situações de violência no ambiente de trabalho.' },
+      { id:'q33', num:'33', text:'Você já passou por algum evento grave no trabalho (acidente sério, situação de risco extremo ou episódio muito impactante)?', hint:'Responda se já passou por situações muito graves ou perigosas no trabalho.' },
+      { id:'q34', num:'34', text:'Alguma situação vivida no trabalho já foi tão marcante que deixou medo, choque ou forte abalo emocional?', hint:'Responda se alguma situação no trabalho já te causou forte abalo emocional.' },
+    ]
+  },
+  { id: 9, containerId: 'questions-t9', countId: 'count-t9',
+    questions: [
+      { id:'q35', num:'33', text:'Você sente que, na maior parte do tempo, tem pouco trabalho a realizar durante sua jornada?', hint:'Responda se costuma ter pouco trabalho durante sua jornada.' },
+      { id:'q36', num:'34', text:'Você costuma ficar com tempo ocioso no trabalho por falta de tarefas ou demandas claras?', hint:'Responda se frequentemente fica sem tarefas para realizar.' },
+      { id:'q37', num:'35', text:'Você sente que suas habilidades ou conhecimentos são pouco utilizados no seu trabalho?', hint:'Responda se sente que suas habilidades são pouco aproveitadas.' },
+      { id:'q38', num:'36', text:'Seu trabalho costuma ser pouco desafiador ou repetitivo a ponto de gerar desânimo?', hint:'Responda se o trabalho é repetitivo ou desmotivador.' },
+    ]
+  },
+  { id: 10, containerId: 'questions-t10', countId: 'count-t10',
+    questions: [
+      { id:'q39', num:'37', text:'Você sente que sua carga de trabalho diária é maior do que consegue realizar dentro do horário normal?', hint:'Responda se a quantidade de trabalho é maior do que consegue realizar.' },
+      { id:'q40', num:'38', text:'Você frequentemente precisa fazer horas extras ou levar trabalho para casa?', hint:'Responda se costuma trabalhar além do horário normal.' },
+      { id:'q41', num:'39', text:'Você já teve sintomas físicos ou emocionais (exaustão, ansiedade ou insônia) devido ao excesso de trabalho?', hint:'Responda se o excesso de trabalho já afetou sua saúde.' },
+      { id:'q42', num:'40', text:'A equipe é dimensionada corretamente para a demanda e quantidade de trabalho existente?', hint:'Responda se a quantidade de pessoas é suficiente para a demanda.' },
+    ]
+  },
+  { id: 11, containerId: 'questions-t11', countId: 'count-t11',
+    questions: [
+      { id:'q43', num:'41', text:'Você já evitou colegas ou superiores por causa de desentendimentos frequentes?', hint:'Responda se já evitou colegas ou superiores por conflitos.' },
+      { id:'q44', num:'42', text:'Você percebe rivalidade excessiva ou desnecessária entre colegas ou setores?', hint:'Responda se percebe disputas desnecessárias no trabalho.' },
+      { id:'q45', num:'43', text:'Conflitos no trabalho costumam ser resolvidos de forma justa?', hint:'Responda se os conflitos costumam ser resolvidos de forma justa.' },
+    ]
+  },
+  { id: 12, containerId: 'questions-t12', countId: 'count-t12',
+    questions: [
+      { id:'q46', num:'44', text:'Você trabalha em condições (turnos diferentes, trabalho externo ou distância física) que dificultam a comunicação?', hint:'Responda se seu trabalho dificulta a comunicação com colegas ou líderes.' },
+      { id:'q47', num:'45', text:'A distância física entre você e sua equipe ou liderança dificulta a troca de informações?', hint:'Responda se a distância atrapalha a troca de informações.' },
+      { id:'q48', num:'46', text:'Você já teve dificuldade para receber informações importantes no momento certo por causa da organização do trabalho?', hint:'Responda se já recebeu informações importantes com atraso.' },
+      { id:'q49', num:'47', text:'Você tem acesso fácil aos meios necessários para se comunicar com colegas e liderança durante o trabalho?', hint:'Responda se você tem meios adequados para se comunicar no trabalho.' },
+    ]
+  },
+  { id: 13, containerId: 'questions-t13', countId: 'count-t13',
+    questions: [
+      { id:'q50', num:'48', text:'Você trabalha grande parte do tempo de forma remota ou sozinho(a), com pouco contato presencial?', hint:'Responda se você trabalha a maior parte do tempo sozinho(a) ou à distância.' },
+      { id:'q51', num:'49', text:'Você sente que o trabalho remoto ou isolado faz com que se sinta distante da equipe ou da empresa?', hint:'Responda se isso faz você se sentir distante da equipe ou da empresa.' },
+      { id:'q52', num:'50', text:'Mesmo trabalhando de forma remota ou isolada, você sente que recebe apoio e acompanhamento adequados da empresa?', hint:'Responda se, mesmo à distância, você recebe apoio da empresa.' },
+    ]
+  },
+];
+
+// Array com os IDs de cada tópico (para validação)
+const topicQIds = topics.map(t => t.questions.map(q => q.id));
+
+// ═══════════════════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ═══════════════════════════════════════════════════════════
+let state = {
+  companyCode: '',
+  companyName: '',
+  answers: {}
+};
+
+// Tenta recuperar progresso salvo
+try {
+  const saved = localStorage.getItem('drps_progress');
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    state.answers = parsed.answers || {};
+  }
+} catch(e) {}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDERIZAÇÃO DAS QUESTÕES
+// ═══════════════════════════════════════════════════════════
+function buildScaleHTML(qid) {
+  let html = '<div class="scale-wrapper">';
+  for (let i = 0; i <= 4; i++) {
+    const checked = state.answers[qid] === i ? 'checked' : '';
+    html += `
+      <label class="scale-option">
+        <input type="radio" name="${qid}" value="${i}" ${checked}
+               onchange="saveAnswer('${qid}', ${i})" />
+        <span class="scale-btn">${i}</span>
+        <span class="scale-label">${scaleLabels[i]}</span>
+      </label>`;
+  }
+  html += '</div>';
+  html += `<div class="scale-legend"><span>0 = Nunca</span><span>4 = Sempre</span></div>`;
+  return html;
+}
+
+function renderTopics() {
+  topics.forEach(topic => {
+    const container = document.getElementById(topic.containerId);
+    if (!container) return;
+    let html = '';
+    topic.questions.forEach((q, idx) => {
+      const answered = state.answers[q.id] !== undefined ? ' answered' : '';
+      html += `
+        <div class="question-block${answered}" id="qb-${q.id}">
+          <p class="question-num">Questão ${q.num} <span class="question-required">*</span></p>
+          <p class="question-text">${q.text}</p>
+          <p class="question-hint">${q.hint}</p>
+          ${buildScaleHTML(q.id)}
+        </div>`;
+    });
+    container.innerHTML = html;
+    updateCount(topic.id);
+  });
+}
+
+function renderDots(currentTopicIdx) {
+  const dotContainers = [
+    'dots-ident','dots-t1','dots-t2','dots-t3','dots-t4','dots-t5','dots-t6',
+    'dots-t7','dots-t8','dots-t9','dots-t10','dots-t11','dots-t12','dots-t13'
+  ];
+  dotContainers.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    let html = '';
+    for (let j = 0; j < dotContainers.length; j++) {
+      if (j < currentTopicIdx) html += '<div class="topic-dot done"></div>';
+      else if (j === currentTopicIdx) html += '<div class="topic-dot active"></div>';
+      else html += '<div class="topic-dot"></div>';
+    }
+    el.innerHTML = html;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GERENCIAMENTO DE RESPOSTAS
+// ═══════════════════════════════════════════════════════════
+function saveAnswer(qid, value) {
+  state.answers[qid] = value;
+  const block = document.getElementById('qb-' + qid);
+  if (block) block.classList.add('answered');
+  // Atualiza contador do tópico correspondente
+  topics.forEach(t => {
+    if (t.questions.some(q => q.id === qid)) updateCount(t.id);
+  });
+  saveProgress();
+  updateProgressBar();
+}
+
+function markAnswered(qid, blockId) {
+  const el = document.getElementById(qid);
+  if (el && el.value.trim()) {
+    const block = document.getElementById(blockId);
+    if (block) block.classList.add('answered');
+    state.answers[qid] = el.value.trim();
+    saveProgress();
+  }
+}
+
+function updateCount(topicId) {
+  const topic = topics.find(t => t.id === topicId);
+  if (!topic) return;
+  const answered = topic.questions.filter(q => state.answers[q.id] !== undefined).length;
+  const el = document.getElementById(topic.countId);
+  if (el) el.textContent = `${answered} de ${topic.questions.length} respondidas`;
+}
+
+function saveProgress() {
+  try {
+    localStorage.setItem('drps_progress', JSON.stringify({ answers: state.answers }));
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PROGRESSO GERAL
+// ═══════════════════════════════════════════════════════════
+const TOTAL_QUESTIONS = 52;
+function updateProgressBar() {
+  const answered = Object.keys(state.answers).length;
+  const pct = Math.round((answered / TOTAL_QUESTIONS) * 100);
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-pct').textContent = pct + '%';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NAVEGAÇÃO
+// ═══════════════════════════════════════════════════════════
+const screenToIndex = {
+  'screen-code': 0, 'screen-welcome': 0, 'screen-identification': 1,
+  'screen-topic-1': 2, 'screen-topic-2': 3, 'screen-topic-3': 4,
+  'screen-topic-4': 5, 'screen-topic-5': 6, 'screen-topic-6': 7,
+  'screen-topic-7': 8, 'screen-topic-8': 9, 'screen-topic-9': 10,
+  'screen-topic-10': 11, 'screen-topic-11': 12, 'screen-topic-12': 13,
+  'screen-topic-13': 14, 'screen-thanks': 15,
+};
+const screenLabels = {
+  'screen-code': 'Código', 'screen-welcome': 'Boas-vindas', 'screen-identification': 'Identificação',
+  'screen-topic-1': 'Tópico 01/13', 'screen-topic-2': 'Tópico 02/13', 'screen-topic-3': 'Tópico 03/13',
+  'screen-topic-4': 'Tópico 04/13', 'screen-topic-5': 'Tópico 05/13', 'screen-topic-6': 'Tópico 06/13',
+  'screen-topic-7': 'Tópico 07/13', 'screen-topic-8': 'Tópico 08/13', 'screen-topic-9': 'Tópico 09/13',
+  'screen-topic-10': 'Tópico 10/13', 'screen-topic-11': 'Tópico 11/13', 'screen-topic-12': 'Tópico 12/13',
+  'screen-topic-13': 'Tópico 13/13 · Final', 'screen-thanks': 'Concluído ✓',
+};
+
+function goToScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(id);
+  if (target) {
+    target.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  const idx = screenToIndex[id] || 0;
+  document.getElementById('step-indicator').textContent = screenLabels[id] || '';
+  renderDots(idx);
+  updateProgressBar();
+}
+
+function nextSection(currentScreen, nextScreen, requiredIds) {
+  const missing = requiredIds.filter(id => state.answers[id] === undefined || state.answers[id] === '');
+  if (missing.length > 0) {
+    showToast(`⚠ Responda todas as questões antes de continuar. (${missing.length} pendente${missing.length > 1 ? 's' : ''})`, 'error');
+    // Scroll to first unanswered
+    const firstMissing = document.getElementById('qb-' + missing[0]);
+    if (firstMissing) firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  goToScreen(nextScreen);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  VALIDAÇÃO DO CÓDIGO DA EMPRESA
+// ═══════════════════════════════════════════════════════════
+async function validateCode() {
+  const input = document.getElementById('company-code-input');
+  const code = input.value.trim().toUpperCase();
+  const errEl = document.getElementById('code-error');
+  errEl.classList.remove('visible');
+
+  if (!code) {
+    errEl.textContent = 'Por favor, insira o código da empresa.';
+    errEl.classList.add('visible');
+    return;
+  }
+
+  // Se Supabase não configurado → aceita qualquer código (modo demo)
+  if (!supabase || SUPABASE_URL.includes('SEU_PROJETO')) {
+    state.companyCode = code;
+    state.companyName = code;
+    goToScreen('screen-welcome');
+    return;
+  }
+
+  showLoading('Validando código da empresa...');
+  try {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('code, name')
+      .eq('code', code)
+      .single();
+
+    hideLoading();
+    if (error || !data) {
+      errEl.textContent = 'Código não encontrado. Verifique com o seu RH.';
+      errEl.classList.add('visible');
+    } else {
+      state.companyCode = data.code;
+      state.companyName = data.name;
+      goToScreen('screen-welcome');
+    }
+  } catch(e) {
+    hideLoading();
+    errEl.textContent = 'Erro de conexão. Tente novamente.';
+    errEl.classList.add('visible');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SUBMIT FINAL
+// ═══════════════════════════════════════════════════════════
+async function submitForm(requiredIds) {
+  const missing = requiredIds.filter(id => state.answers[id] === undefined);
+  if (missing.length > 0) {
+    showToast(`⚠ Responda todas as questões do último tópico antes de enviar. (${missing.length} pendente${missing.length > 1 ? 's' : ''})`, 'error');
+    return;
+  }
+
+  // Monta payload
+  const payload = {
+    company_code: state.companyCode,
+    submitted_at: new Date().toISOString(),
+    q1_funcao:  state.answers['q1']  || null,
+    q2_setor:   state.answers['q2']  || null,
+  };
+  for (let i = 3; i <= 52; i++) {
+    const k = 'q' + i;
+    payload[k] = state.answers[k] !== undefined ? state.answers[k] : null;
+  }
+
+  // Se Supabase não configurado → só mostra tela de sucesso
+  if (!supabase || SUPABASE_URL.includes('SEU_PROJETO')) {
+    console.log('Payload (demo mode):', payload);
+    localStorage.removeItem('drps_progress');
+    goToScreen('screen-thanks');
+    return;
+  }
+
+  showLoading('Enviando suas respostas com segurança...');
+  try {
+    const { error } = await supabase.from('responses').insert([payload]);
+    hideLoading();
+    if (error) {
+      showToast('Erro ao enviar. Tente novamente em instantes.', 'error');
+      console.error(error);
+    } else {
+      localStorage.removeItem('drps_progress');
+      goToScreen('screen-thanks');
+    }
+  } catch(e) {
+    hideLoading();
+    showToast('Erro de conexão. Verifique sua internet e tente novamente.', 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════════════════
+function showLoading(msg) {
+  document.getElementById('loading-text').textContent = msg;
+  document.getElementById('loading-overlay').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.remove('show');
+}
+
+let toastTimer;
+function showToast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 4000);
+}
+
+// ── Detecta code na URL — bloqueia código, pula tela de entrada ──
+function detectUrlCode() {
+  const params = new URLSearchParams(window.location.search);
+  const code = (params.get('code') || '').trim().toUpperCase();
+  if (code) {
+    state.companyCode = code;
+    state.companyName = code;
+    // Oculta completamente a tela de código da empresa
+    document.getElementById('screen-code').style.display = 'none';
+    // Vai direto para boas-vindas sem pedir código
+    goToScreen('screen-welcome');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  renderTopics();
+  renderDots(0);
+  updateProgressBar();
+  detectUrlCode();
+
+  // Enter key no campo de código
+  document.getElementById('company-code-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') validateCode();
+  });
+
+  // Restaura respostas salvas nos campos de texto
+  if (state.answers['q1']) {
+    const q1 = document.getElementById('q1');
+    if (q1) q1.value = state.answers['q1'];
+    const b = document.getElementById('qb-q1');
+    if (b) b.classList.add('answered');
+  }
+  if (state.answers['q2']) {
+    const q2 = document.getElementById('q2');
+    if (q2) q2.value = state.answers['q2'];
+    const b = document.getElementById('qb-q2');
+    if (b) b.classList.add('answered');
+  }
+});
+</script>
+</body>
+</html>
