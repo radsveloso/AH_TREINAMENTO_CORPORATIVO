@@ -466,7 +466,7 @@
 // ═══════════════════════════════════════════
 // CONFIG — altere para suas credenciais
 // ═══════════════════════════════════════════
-const SUPABASE_URL = 'https://fmyycclxpbbkicfffrmi.supabase.co';
+const SUPABASE_URL = 'https://whvrzrbnavcqmavluwot.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_pNKUOlMZe6-x8hVqqx76pA_qyW6Vgnl';
 const SB_HEADERS = {
   'Content-Type': 'application/json',
@@ -577,8 +577,9 @@ async function doLogin() {
     showScreen('screen-dash');
     loadDashboard();
   } catch(e) {
-    errEl.textContent = e.message;
+    errEl.textContent = e.message || 'Erro de conexão. Tente novamente.';
     errEl.style.display = 'block';
+    console.error('Login error:', e);
   } finally {
     btn.textContent = 'Entrar no Dashboard'; btn.disabled = false;
   }
@@ -1037,6 +1038,15 @@ async function exportPDF() {
 }
 
 // ─── Init ─────────────────────────────────
+// Pré-preencher código se vier na URL (?code=EMPXX1234)
+(function detectUrlCode() {
+  const params = new URLSearchParams(window.location.search);
+  const code = (params.get('code') || '').trim().toUpperCase();
+  if (code) {
+    document.getElementById('inp-code').value = code;
+    setTimeout(() => document.getElementById('inp-pw').focus(), 100);
+  }
+})();
 showScreen('screen-login');
 </script>
 </body>
