@@ -354,6 +354,10 @@ function getSurveyLink(code) {
   return SURVEY_BASE_URL + '?code=' + (code || getCode());
 }
 
+function getDashboardLink(code) {
+  return SURVEY_BASE_URL.replace('index.html', 'dashboard.html') + '?code=' + (code || getCode());
+}
+
 function updatePreview() {
   document.getElementById('link-preview').textContent = getSurveyLink();
 }
@@ -426,6 +430,7 @@ async function loadCompanies() {
     const pwDisplay = c.dashboard_password
       ? `<span style="font-size:11px;font-family:monospace;background:rgba(255,255,255,.08);padding:2px 7px;border-radius:5px;">${esc(c.dashboard_password)}</span>`
       : '<span style="color:var(--hint);font-size:11px;">— não definida</span>';
+    const dashLink = getDashboardLink(c.code);
     return `<tr>
       <td>${esc(c.name)}</td>
       <td><span class="badge badge-code">${esc(c.code)}</span></td>
@@ -436,7 +441,8 @@ async function loadCompanies() {
       <td style="font-size:12px;">${dt}</td>
       <td>
         <div class="actions">
-          <button class="btn-copy" onclick="copyText('${link}')">📋 Copiar link</button>
+          <button class="btn-copy" onclick="copyText('${link}')">📋 Link Pesquisa</button>
+          <button class="btn-copy" style="background:rgba(142,68,173,0.2);border-color:rgba(142,68,173,0.5);color:#c39bd3;" onclick="copyText('${dashLink}')">📊 Link Dashboard</button>
           <button class="btn-sm" onclick="openEmailModal('${esc(c.code)}','${esc(c.name)}','${link}')">✉️ Enviar</button>
         </div>
       </td>
