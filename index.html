@@ -219,6 +219,95 @@
     }
     .commitment-box strong { color: var(--text-primary); }
 
+    /* ── Logo AH Treinamento ────────────────── */
+    .ah-logo-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+    .ah-logo-box {
+      background: linear-gradient(135deg, #FFD60A 60%, #FFA500 100%);
+      border-radius: 18px;
+      width: 90px;
+      height: 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 40px rgba(255,214,10,0.35), 0 4px 20px rgba(0,0,0,0.3);
+      margin-bottom: 12px;
+    }
+    .ah-logo-text {
+      font-size: 34px;
+      font-weight: 900;
+      color: var(--brand-dark);
+      letter-spacing: -1px;
+      line-height: 1;
+      font-style: italic;
+    }
+    .ah-logo-excl {
+      width: 6px;
+      height: 6px;
+      background: var(--brand-dark);
+      border-radius: 50%;
+      margin-top: 2px;
+    }
+    .ah-logo-brand {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      color: var(--text-hint);
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .drps-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .drps-company-name {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: var(--brand-yellow);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .drps-main-title {
+      font-size: clamp(20px, 4vw, 26px);
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1.25;
+      margin-bottom: 0;
+    }
+    .welcome-divider {
+      height: 1px;
+      background: rgba(255,255,255,0.08);
+      margin: 24px 0;
+    }
+    .welcome-paragraph {
+      font-size: 14px;
+      line-height: 1.75;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+    .welcome-paragraph strong { color: var(--text-primary); }
+    .welcome-commitment {
+      background: rgba(255,214,10,0.06);
+      border: 1px solid rgba(255,214,10,0.2);
+      border-radius: var(--radius-md);
+      padding: 20px 22px;
+      margin: 20px 0 28px;
+    }
+    .welcome-commitment p {
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+    .welcome-commitment p:last-child { margin-bottom: 0; }
+    .welcome-commitment strong { color: var(--brand-yellow); }
+
     /* ── Company Code Screen ────────────────── */
     .code-icon {
       font-size: 48px;
@@ -705,27 +794,62 @@
   <!-- ── Screen 1: Boas-vindas ───────────────── -->
   <div class="screen" id="screen-welcome">
     <div class="card">
-      <div class="welcome-logo">📋</div>
-      <p class="welcome-subtitle">DRPS — Diagnóstico de Riscos Psicossociais</p>
-      <h1 class="welcome-title">AH Treinamento Corporativo</h1>
-      <p class="welcome-text">
-        Este formulário identifica fatores de risco psicossocial no ambiente de trabalho,
-        conforme as diretrizes da <strong>NR-01</strong> e do Guia de Avaliação de Riscos
-        Psicossociais do <strong>Ministério do Trabalho e Emprego (MTE)</strong>.
-      </p>
+
+      <!-- Logo AH Treinamento -->
+      <div class="ah-logo-wrap">
+        <div class="ah-logo-box">
+          <span class="ah-logo-text">ah!</span>
+        </div>
+        <span class="ah-logo-brand">Treinamento Corporativo</span>
+      </div>
+
+      <!-- Título DRPS -->
+      <div class="drps-header">
+        <p class="drps-company-name">AH Treinamento Corporativo</p>
+        <h1 class="drps-main-title">DRPS — Diagnóstico de<br/>Riscos Psicossociais</h1>
+      </div>
+
       <div class="info-pills">
-        <span class="pill">🔒 Respostas 100% confidenciais</span>
+        <span class="pill">🔒 Confidencial · LGPD</span>
         <span class="pill">⏱ ~10 minutos</span>
         <span class="pill">📊 52 questões</span>
-        <span class="pill">🛡 LGPD</span>
       </div>
-      <div class="commitment-box">
-        <strong>Sua participação faz a diferença.</strong><br/>
-        Ao responder, você declara que fornecerá informações verdadeiras e baseadas na sua
-        experiência real. As respostas são analisadas de forma <strong>coletiva e anônima</strong>,
-        sem identificar ninguém individualmente. Sua opinião ajuda a construir um ambiente
-        de trabalho mais <strong>saudável, respeitoso e seguro para todos</strong>.
+
+      <div class="welcome-divider"></div>
+
+      <p class="welcome-paragraph">
+        <strong>Bem-vindo(a) ao DRPS – Diagnóstico de Riscos Psicossociais</strong>
+      </p>
+
+      <p class="welcome-paragraph">
+        Este formulário tem como objetivo identificar fatores de risco psicossocial presentes no
+        ambiente de trabalho, conforme as diretrizes atualizadas da <strong>NR-01</strong> e do
+        Guia de Avaliação de Riscos Psicossociais do
+        <strong>Ministério do Trabalho e Emprego (MTE)</strong>.
+      </p>
+
+      <p class="welcome-paragraph">
+        Sua participação é voluntária e muito importante. As respostas são confidenciais e serão
+        analisadas de forma geral, <strong>sem identificar ninguém individualmente</strong>,
+        conforme a <strong>Lei Geral de Proteção de Dados (LGPD)</strong>.
+      </p>
+
+      <p class="welcome-paragraph">
+        O formulário está dividido em tópicos que avaliam diferentes aspectos do trabalho, como
+        organização das atividades, relacionamento, apoio, comunicação e carga de trabalho.
+      </p>
+
+      <div class="welcome-commitment">
+        <p>
+          <strong>Responda com sinceridade, pensando na sua experiência real.</strong>
+          Ao responder este questionário, você declara que fornecerá informações verdadeiras,
+          baseadas na sua experiência real, e se comprometerá a não omitir, exagerar ou distorcer fatos.
+        </p>
+        <p>
+          <strong>Sua opinião ajuda a construir um ambiente de trabalho mais saudável, respeitoso e seguro para todos.</strong>
+        </p>
       </div>
+
       <button class="btn-primary" onclick="goToScreen('screen-identification')">Começar agora →</button>
     </div>
   </div>
